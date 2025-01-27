@@ -1,0 +1,4 @@
+Flask==3.0.3
+google-cloud-speech==2.27.0
+google-cloud-texttospeech==2.17.2
+gunicorn==22.0.0
