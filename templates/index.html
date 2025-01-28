@@ -41,7 +41,19 @@
                   <br>
                   <input type="submit" value="Upload">
                 </form>
-
+                
+                <h2>Generated Audio Files</h2>
+                <ul>
+                    {% for tts_file in tts_files %}
+                    <li>
+                        <audio controls>
+                            <source src="{{ url_for('tts_file', filename=tts_file) }}">
+                            Your browser does not support the audio element.
+                        </audio><br>
+                        <strong>{{ tts_file }}</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
                 <!-- insert list of files here -->
             </td>
         </tr>
