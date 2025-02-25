@@ -13,7 +13,7 @@ app = Flask(__name__)
 # Configure upload folder
 UPLOAD_FOLDER = 'uploads'
 TTS_FOLDER= 'tts'
-ALLOWED_EXTENSIONS = {'wav'}
+ALLOWED_EXTENSIONS = {'wav', 'txt'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['TTS_FOLDER'] = TTS_FOLDER
 #configure api key , LOAD FROM ENVIRONEMENT VARIABLE YOU CONFIGURED EARLIER IN TERMINAL
@@ -31,21 +31,44 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def get_files(folder):
-    files = []
+def get_files_with_transcripts(folder):
+    audio_files = []
     for filename in os.listdir(folder):
-        if allowed_file(filename):
-            files.append(filename)
-            print(filename)
-    files.sort(reverse=True)
-    return files
+        if filename.endswith('.wav'):
+            #check if theres a corresponding transcript file
+            transcript_file = filename.replace('.wav', '.txt')
+            transcript_exists = os.path.exists(os.path.join(folder, transcript_file))
+
+            audio_files.append({
+                'filename': filename,
+                'transcript_file': transcript_file if transcript_exists else None
+            })
+    audio_files.sort(key=lambda x: x['filename'], reverse=True)
+    return audio_files
+
+def get_tts_files_with_texts(folder):
+    tts_files=[]
+    for filename in os.listdir(folder):
+        if filename.endswith('.wav'):
+            #check if theres a corresponding text file
+            text_file = filename.replace('.wav', '.txt')
+            text_exists = os.path.exists(os.path.join(folder, text_file))
+
+            tts_files.append({
+                'filename': filename,
+                'text_file': text_file if text_exists else None
+            })
+
+    tts_files.sort(key=lambda x: x['filename'], reverse=True)
+    return tts_files
+
 
 #changed up index function for project one to include both file types
 @app.route('/')
 def index():
-    files = get_files(UPLOAD_FOLDER)
-    tts_files = get_files(TTS_FOLDER)
-    return render_template('index.html', files=files, tts_files=tts_files)
+    audio_files = get_files_with_transcripts(UPLOAD_FOLDER)
+    tts_files = get_tts_files_with_texts(TTS_FOLDER)
+    return render_template('index.html', audio_files=audio_files, tts_files=tts_files)
 
 @app.route('/upload', methods=['POST'])
 def upload_audio():
@@ -110,10 +133,16 @@ def upload_text():
     # Save the output as a audio file in the 'tts' directory 
     filename = datetime.now().strftime("%Y%m%d-%I%M%S%p") + '.wav'
     output_path = os.path.join(app.config['TTS_FOLDER'], filename)
-    # Display the audio files at the bottom and allow the user to listen to them
+
+    # Save the original text to a text file with the same name
+    text_path = os.path.join(app.config['TTS_FOLDER'], filename.replace('.wav', '.txt'))
+    with open(text_path, 'w') as f:
+        f.write(text)
+    #
+    
+     # Display the audio files at the bottom and allow the user to listen to them
     with open(output_path, 'wb') as f:
         f.write(response.audio_content)
-    #
 
     return redirect('/') #success
 

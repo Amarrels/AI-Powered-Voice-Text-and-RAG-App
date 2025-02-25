@@ -21,14 +21,16 @@
                 <hl></hl>
                 <h2>Recorded Files</h2>
                 <ul>
-                    {% for file in files %}
-                    <li> 
+                    {% for file in audio_files %}
+                    <li>
                         <audio controls>
-                            <source src="{{ url_for('uploaded_file', filename=file) }}">
+                            <source src="{{ url_for('uploaded_file', filename=file['filename']) }}" type="audio/wav">
                             Your browser does not support the audio element.
                         </audio><br>
-                        {{file}}
-                        <a href="uploads/{{file}}.txt">{{file}}.txt</a>
+                        {{ file['filename'] }}
+                        {% if file['transcript_file'] %}
+                            <a href="{{ url_for('uploaded_file', filename=file['transcript_file']) }}" target="_blank">Download Transcript</a>
+                        {% endif %}
                     </li>
                     {% endfor %}
                 </ul>
@@ -47,14 +49,16 @@
                     {% for tts_file in tts_files %}
                     <li>
                         <audio controls>
-                            <source src="{{ url_for('tts_file', filename=tts_file) }}">
+                            <source src="{{ url_for('tts_file', filename=tts_file['filename']) }}" type="audio/wav">
                             Your browser does not support the audio element.
                         </audio><br>
-                        <strong>{{ tts_file }}</strong>
+                        <strong>{{ tts_file['filename'] }}</strong>
+                        {% if tts_file['text_file'] %}
+                            <a href="{{ url_for('tts_file', filename=tts_file['text_file']) }}" target="_blank">Download Text</a>
+                        {% endif %}
                     </li>
                     {% endfor %}
                 </ul>
-                <!-- insert list of files here -->
             </td>
         </tr>
     </table>
