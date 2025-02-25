@@ -137,7 +137,7 @@ def upload_audio():
 
         #perform sentiment analysis on transcription
         sentiment_response = analyze_text_sentiment(transcript)
-
+        
         #save sentiment analysis results as .txt file 
         transcript_filename = filename.replace('.wav','_sentiment.txt')
         transcript_path = os.path.join(app.config['UPLOAD_FOLDER'], transcript_filename)
@@ -146,6 +146,14 @@ def upload_audio():
             f.write(transcript)
             f.write("\n\n--- Sentiment Analysis ---\n")
             sentiment = sentiment_response.document_sentiment
+            score = sentiment.score * sentiment.magnitude
+            if score > 0.75:
+                f.write(f"POSITIVE\n")
+            elif score < -0.75:
+                f.write(f"NEGATIVE\n")
+            else: 
+                f.write(f"NEUTRAL\n")
+
             f.write(f"Sentiment Score: {sentiment.score}\n")
             f.write(f"Sentiment Magnitude: {sentiment.magnitude}\n")
             f.write(f"Language: {sentiment_response.language}\n")
@@ -200,6 +208,14 @@ def upload_text():
         f.write(text)
         f.write("\n\n--- Sentiment Analysis ---\n")
         sentiment = sentiment_response.document_sentiment
+        score = sentiment.score * sentiment.magnitude
+        if score > 0.75:
+            f.write(f"POSITIVE\n")
+        elif score < -0.75:
+            f.write(f"NEGATIVE\n")
+        else: 
+            f.write(f"NEUTRAL\n")
+                
         f.write(f"Sentiment Score: {sentiment.score}\n")
         f.write(f"Sentiment Magnitude: {sentiment.magnitude}\n")
         f.write(f"Language: {sentiment_response.language}\n")
