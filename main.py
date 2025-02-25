@@ -1,5 +1,5 @@
 from datetime import datetime
-from google.cloud import speech, texttospeech_v1
+from google.cloud import speech, texttospeech_v1, language_v1
 from flask import Flask, render_template, request, redirect, url_for, send_file, send_from_directory, flash
 from werkzeug.utils import secure_filename
 
@@ -62,6 +62,41 @@ def get_tts_files_with_texts(folder):
     tts_files.sort(key=lambda x: x['filename'], reverse=True)
     return tts_files
 
+#Project 2- importing language api for sentiment analysis 
+
+def analyze_text_sentiment(text: str):
+    # Initialize the client for Google Cloud Language API
+    client = language_v1.LanguageServiceClient()
+
+    # Create a Document object with the text content
+    document = language_v1.Document(
+        content=text,
+        type_=language_v1.Document.Type.PLAIN_TEXT
+    )
+
+    # Call the API to analyze sentiment
+    sentiment_response = client.analyze_sentiment(document=document)
+
+    return sentiment_response
+
+def get_files_with_transcripts(folder):
+    audio_files = []
+    for filename in os.listdir(folder):
+        if filename.endswith('.wav'):
+            # Check if there's a corresponding transcript file
+            transcript_file = filename.replace('.wav', '.txt')
+            transcript_exists = os.path.exists(os.path.join(folder, transcript_file))
+            sentiment_file = filename.replace('.wav', '_sentiment.txt')
+            sentiment_exists = os.path.exists(os.path.join(folder, sentiment_file))
+
+            audio_files.append({
+                'filename': filename,
+                'transcript_file': transcript_file if transcript_exists else None,
+                'sentiment_file': sentiment_file if sentiment_exists else None
+            })
+    audio_files.sort(key=lambda x: x['filename'], reverse=True)
+    return audio_files
+
 
 #changed up index function for project one to include both file types
 @app.route('/')
@@ -85,7 +120,7 @@ def upload_audio():
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
 
-        #
+        #Speech-to-text with transcription
         #Project 1
         # Modify this block to call the speech to text API
         with open(file_path, 'rb') as audio_file:
@@ -109,14 +144,34 @@ def upload_audio():
         transcript_path = os.path.join(app.config['UPLOAD_FOLDER'], filename.replace('.wav', '.txt'))
         with open(transcript_path, 'w') as f:
             f.write(transcript)
-        #
-        #
+
+        #perform sentiment analysis on transcription
+        sentiment_response = analyze_text_sentiment(transcript)
+
+        #save sentiment analysis results as .txt file 
+        transcript_filename = filename.replace('.wav','_sentiment.txt')
+        transcript_path = os.path.join(app.config['UPLOAD_FOLDER'], transcript_filename)
+
+        with open(transcript_path, 'w') as f:
+            f.write(transcript)
+            f.write("\n\n--- Sentiment Analysis ---\n")
+            sentiment = sentiment_response.document_sentiment
+            f.write(f"Sentiment Score: {sentiment.score}\n")
+            f.write(f"Sentiment Magnitude: {sentiment.magnitude}\n")
+            f.write(f"Language: {sentiment_response.language}\n")
+
+            # Optionally: Display sentence-level sentiment
+            for sentence in sentiment_response.sentences:
+                f.write(f"Sentence: {sentence.text.content}\n")
+                f.write(f"Sentence Sentiment: {sentence.sentiment.score}\n")
+
     return redirect('/') #success
 
 @app.route('/upload/<filename>')
 def get_file(filename):
     return send_file(filename)
 
+tts_files = []
     
 @app.route('/upload_text', methods=['POST'])
 def upload_text():
@@ -124,7 +179,7 @@ def upload_text():
     print(text)
     #
     #
-    # Modify this block to call the stext to speech API
+    # Modify this block to call the text to speech API
     synthesis_input = texttospeech_v1.SynthesisInput(text=text)
     voice = texttospeech_v1.VoiceSelectionParams(language_code="en-US")
     audio_config = texttospeech_v1.AudioConfig(audio_encoding=texttospeech_v1.AudioEncoding.LINEAR16)
@@ -138,11 +193,34 @@ def upload_text():
     text_path = os.path.join(app.config['TTS_FOLDER'], filename.replace('.wav', '.txt'))
     with open(text_path, 'w') as f:
         f.write(text)
-    #
     
      # Display the audio files at the bottom and allow the user to listen to them
     with open(output_path, 'wb') as f:
         f.write(response.audio_content)
+    
+
+    # Call the sentiment analysis function
+    sentiment_response = analyze_text_sentiment(text)
+
+    # Extract sentiment score and magnitude from the response
+    sentiment_score = sentiment_response.document_sentiment.score
+    sentiment_magnitude = sentiment_response.document_sentiment.magnitude
+
+    # Save sentiment analysis to a text file
+    sentiment_filename = filename.replace('.wav', '_sentiment.txt')
+    sentiment_path = os.path.join(app.config['TTS_FOLDER'], sentiment_filename)
+    with open(sentiment_path, 'w') as f:
+        f.write(f"Sentiment Score: {sentiment_score}\n")
+        f.write(f"Sentiment Magnitude: {sentiment_magnitude}\n")
+        f.write(f"Text: {text}\n")
+
+    # Add the generated TTS file, text file, and sentiment analysis result to the list
+    tts_files.append({
+        'filename': filename,
+        'text_file': text_path,
+        'sentiment_file': sentiment_filename
+    })
+    
 
     return redirect('/') #success
 

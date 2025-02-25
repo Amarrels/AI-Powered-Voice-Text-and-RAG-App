@@ -31,6 +31,9 @@
                         {% if file['transcript_file'] %}
                             <a href="{{ url_for('uploaded_file', filename=file['transcript_file']) }}" target="_blank">Download Transcript</a>
                         {% endif %}
+                        {% if file['sentiment_file'] %}
+                            <a href="{{ url_for('uploaded_file', filename=file['sentiment_file']) }}" target="_blank">Download Sentiment Analysis</a>
+                        {% endif %}
                     </li>
                     {% endfor %}
                 </ul>
@@ -55,6 +58,9 @@
                         <strong>{{ tts_file['filename'] }}</strong>
                         {% if tts_file['text_file'] %}
                             <a href="{{ url_for('tts_file', filename=tts_file['text_file']) }}" target="_blank">Download Text</a>
+                        {% endif %}
+                        {% if tts_file['sentiment_file'] %}
+                            <a href="{{ url_for('tts_file', filename=tts_file['sentiment_file']) }}" target="_blank"> Download Sentiment Analysis</a>
                         {% endif %}
                     </li>
                     {% endfor %}
