@@ -38,34 +38,17 @@
                     {% endfor %}
                 </ul>
             </td>
+<!-- 
             <td style="width:50%">
                 <h2>Type in your text to generate audio</h2>
-
+            
                 <form action="/upload_text" method="post">
-                  <textarea name="text" rows="10" cols="50"></textarea>
-                  <br>
-                  <input type="submit" value="Upload">
+                    <textarea name="text" rows="10" cols="50"></textarea>
+                    <br>
+                    <input type="submit" value="Upload">
                 </form>
-                
-                <h2>Generated Audio Files</h2>
-                <ul>
-                    {% for tts_file in tts_files %}
-                    <li>
-                        <audio controls>
-                            <source src="{{ url_for('tts_file', filename=tts_file['filename']) }}" type="audio/wav">
-                            Your browser does not support the audio element.
-                        </audio><br>
-                        <strong>{{ tts_file['filename'] }}</strong>
-                        {% if tts_file['text_file'] %}
-                            <a href="{{ url_for('tts_file', filename=tts_file['text_file']) }}" target="_blank">Download Text</a>
-                        {% endif %}
-                        {% if tts_file['sentiment_file'] %}
-                            <a href="{{ url_for('tts_file', filename=tts_file['sentiment_file']) }}" target="_blank"> Download Sentiment Analysis</a>
-                        {% endif %}
-                    </li>
-                    {% endfor %}
-                </ul>
-            </td>
+            
+            </td> -->
         </tr>
     </table>
 </body>
