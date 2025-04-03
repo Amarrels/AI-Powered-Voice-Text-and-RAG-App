@@ -21,19 +21,14 @@
                 <hl></hl>
                 <h2>Recorded Files</h2>
                 <ul>
-                    {% for file in audio_files %}
+                    {% for file in files %}
                     <li>
                         <audio controls>
-                            <source src="{{ url_for('uploaded_file', filename=file['filename']) }}" type="audio/wav">
+                            <source src="{{ url_for('uploaded_file', filename=file) }}">
                             Your browser does not support the audio element.
                         </audio><br>
-                        {{ file['filename'] }}
-                        {% if file['transcript_file'] %}
-                            <a href="{{ url_for('uploaded_file', filename=file['transcript_file']) }}" target="_blank">Download Transcript</a>
-                        {% endif %}
-                        {% if file['sentiment_file'] %}
-                            <a href="{{ url_for('uploaded_file', filename=file['sentiment_file']) }}" target="_blank">Download Sentiment Analysis</a>
-                        {% endif %}
+                        {{ file }}
+                            <a href="uploads/{{file}}.txt">{{file}}.txt</a>
                     </li>
                     {% endfor %}
                 </ul>
