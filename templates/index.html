@@ -1,50 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Audio Recorder</title>
+  <meta charset="UTF-8">
+  <title>Book Knowledge App</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-    <table style="width:100%">
-        <tr>
-            <td style="width:50%">
-                <h2>Record and Upload Audio</h2>
+  <div class="container">
+    <div class="logo-header">
+        <img src="{{ url_for('static', filename='BookApplogo.png') }}" alt="Book Logo">
+    </div>
+      
+    <!-- Status Messages -->
+    {% if status %}
+      <div class="status-message">
+        {% if status == 'book_error' %}
+          <p class="status-error">❌ Invalid PDF. Please upload a .pdf file.</p>
+        {% elif status == 'book_uploaded' %}
+          <p class="status-success">✅ Book uploaded successfully!</p>
+        {% elif status == 'no_book' %}
+          <p class="status-error">⚠️ Please upload a book first.</p>
+        {% elif status == 'audio_error' %}
+          <p class="status-error">❌ Invalid audio. Upload a .wav file.</p>
+        {% elif status == 'question_ok' %}
+          <p class="status-success">✅ Question processed! See response below.</p>
+        {% elif status == 'tts_error' %}
+          <p class="status-error">⚠️ TTS generation failed.</p>
+        {% endif %}
+      </div>
+    {% endif %}
 
-                <button id="record">Record</button>
-                <button id="stop">Stop</button>
-                <span id="timer">00:00</span>
-                <audio id="audio"></audio>
-                <form id="uploadForm" method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="audio_data" id="audioData">
-                </form>
-                <script src="script.js"></script>
-                <hl></hl>
-                <h2>Recorded Files</h2>
-                <ul>
-                    {% for file in files %}
-                    <li>
-                        <audio controls>
-                            <source src="{{ url_for('uploaded_file', filename=file) }}">
-                            Your browser does not support the audio element.
-                        </audio><br>
-                        {{ file }}
-                            <a href="uploads/{{file}}.txt">{{file}}.txt</a>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </td>
-<!-- 
-            <td style="width:50%">
-                <h2>Type in your text to generate audio</h2>
-            
-                <form action="/upload_text" method="post">
-                    <textarea name="text" rows="10" cols="50"></textarea>
-                    <br>
-                    <input type="submit" value="Upload">
-                </form>
-            
-            </td> -->
-        </tr>
-    </table>
+    <section>
+      <h2>📄 Upload Book (PDF)</h2>
+      <form action="{{ url_for('upload_book') }}" method="post" enctype="multipart/form-data">
+        <input type="file" name="book_pdf" accept=".pdf" required>
+        <input type="submit" value="Upload Book">
+      </form>
+      {% if current_book %}
+        <p><strong>Current book:</strong> {{ current_book }}</p>
+      {% endif %}
+    </section>
+
+    <section>
+      <h2>🎤 Record Your Question</h2>
+      <button id="record">🎙️ Record</button>
+      <button id="stop">⏹️ Stop</button>
+      <span id="timer">00:00</span>
+      <audio id="audio" controls></audio>
+    </section>
+
+    <section>
+      <h2>📚 Available Books</h2>
+      <ul>
+        {% for file in pdf_files %}
+          <li><a href="{{ url_for('serve_book', filename=file) }}" target="_blank">{{ file }}</a></li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section>
+      <h2>🗣️ Audio Queries</h2>
+      <ul>
+        {% for file in audio_files %}
+          <li>
+            <strong>{{ file }}</strong>
+            <audio controls>
+              <source src="{{ url_for('serve_audio', filename=file) }}">
+              Audio not supported.
+            </audio>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section>
+      <h2>🔊 TTS Responses</h2>
+      <ul>
+        {% for file in tts_files %}
+          <li>
+            <strong>{{ file }}</strong>
+            <audio controls>
+              <source src="{{ url_for('serve_tts', filename=file) }}">
+              Audio not supported.
+            </audio>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+
+  <script src="{{ url_for('serve_script') }}"></script>
 </body>
 </html>

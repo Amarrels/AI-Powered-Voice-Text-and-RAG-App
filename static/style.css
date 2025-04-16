@@ -1,0 +1,134 @@
+
+body {
+  background: linear-gradient(to bottom, #fffcdc, #d9a7c7);
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  max-width: 800px;
+  width: 100%;
+  padding: 30px;
+}
+
+h1 {
+  text-align: center;
+  font-size: 2.5rem;
+  color: bal;
+  margin-bottom: 30px;
+}
+
+section {
+  background: #ffffff;
+  padding: 24px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(199, 21, 133, 0.1);
+  border: 1px solid #f8d4e6;
+}
+
+
+
+h2 {
+  margin-bottom: 16px;
+  color: #d63384;
+  border-bottom: 1px solid #f3c1da;
+  padding-bottom: 6px;
+}
+
+input[type="file"], 
+button {
+  display: block;
+  margin: 12px auto;
+  padding: 10px 18px;
+  color: #4a004d;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+input[type="submit"],
+button {
+  display: block;
+  margin: 12px auto;
+  padding: 10px 18px;
+  background: #ffbd03;
+  color: #4a004d;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+input[type="submit"]:hover,
+button:hover {
+  background: #f2a8c4;
+}
+
+audio {
+  width: 100%;
+  margin-top: 10px;
+  border-radius: 6px;
+}
+
+ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+li {
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f8d4e6;
+}
+
+.status-message {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.status-success,
+.status-error {
+  padding: 12px;
+  border-radius: 8px;
+  width: fit-content;
+  margin: 0 auto 20px auto;
+  font-weight: bold;
+}
+
+.status-success {
+  background: #f3e8ed;
+  color: #9f3a6e;
+}
+
+.status-error {
+  background: #ffe5ec;
+  color: #c92a2a;
+}
+
+#timer {
+  display: block;
+  text-align: center;
+  font-size: 1.2rem;
+  color: #8d4c69;
+}
+
+.logo-header {
+  margin-top: 10px; /* pushes below fixed navbar */
+  display: flex;
+  justify-content:center;
+  align-items: center;
+ 
+}
+
+.logo-header img {
+  width: 400px;
+  height: 40;
+  
+}

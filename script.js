@@ -8,6 +8,7 @@ const timerDisplay = document.getElementById('timer');
 let mediaRecorder;
 let audioChunks = [];
 let startTime;
+let recording = false;
 
 function formatTime(time) {
   const minutes = Math.floor(time / 60);
@@ -20,11 +21,14 @@ recordButton.addEventListener('click', () => {
     .then(stream => {
       mediaRecorder = new MediaRecorder(stream);
       mediaRecorder.start();
+      recording = true;
 
       startTime = Date.now();
       let timerInterval = setInterval(() => {
         const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-        timerDisplay.textContent = formatTime(elapsedTime);
+        if (recording) {
+          timerDisplay.textContent = formatTime(elapsedTime);
+        }
       }, 1000);
 
       mediaRecorder.ondataavailable = e => {
@@ -35,7 +39,7 @@ recordButton.addEventListener('click', () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
         const formData = new FormData();
         formData.append('audio_data', audioBlob, 'recorded_audio.wav');
-
+        recording = false;
         fetch('/upload', {
             method: 'POST',
             body: formData
@@ -68,6 +72,8 @@ recordButton.addEventListener('click', () => {
 stopButton.addEventListener('click', () => {
   if (mediaRecorder) {
     mediaRecorder.stop();
+    
+    timerDisplay.textContent = '00:00'
   }
 
   recordButton.disabled = false;
