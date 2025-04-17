@@ -123,7 +123,6 @@ def generate(audio_path, pdf_path):
     tts_filename = f"{timestamp}_response.wav"
     tts_path = os.path.join(TTS_FOLDER, tts_filename)
 
-    # Call your reusable Project 2-style function
     text_to_speech(answer_text, tts_path)
 
 
@@ -179,6 +178,9 @@ def upload_book():
 @app.route('/upload', methods=['POST'])
 def upload_audio():
     print("📥 Upload route hit.")
+    #ensure your api key is working
+    #set in terminal by $env:GEMINI_API_KEY=''
+    print("🔑 GEMINI_API_KEY is:", os.environ.get("GEMINI_API_KEY"))
 
     # 1. Check if book exists
     pdf_files = get_uploaded_files(app.config['PDF_FOLDER'], ALLOWED_PDF_EXTS)
