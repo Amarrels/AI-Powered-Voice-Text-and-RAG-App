@@ -119,7 +119,7 @@ def generate(audio_gcs_path, pdf_gcs_path):
                 print(f"🧹 Cleaned up temporary PDF file: {temp_pdf_path}")
             except Exception as e_clean:
                 print(f"⚠️ Error cleaning up temp PDF file {temp_pdf_path}: {e_clean}")
-        # --- End Cleanup ---
+      
 
     # --- Construct Contents for Gemini API Call ---
     # This part MUST be *after* the finally block, ensuring uploads were attempted
@@ -146,7 +146,7 @@ def generate(audio_gcs_path, pdf_gcs_path):
             )}
         ]
     }]
-    # ***** END CORRECTION *****
+    
 
     # --- Generate content text from Gemini ---
     answer_text = None
@@ -242,120 +242,97 @@ def upload_book():
     except Exception as e:
         return redirect(url_for('index', status='error', message=str(e)))
 
+
 @app.route('/upload', methods=['POST'])
 def upload_audio():
-    global current_book_gcs_path # Declare global as we might modify it here
+    global current_book_gcs_path
     print("📥 Audio upload route hit.")
 
-    # --- Determine which PDF to use ---
-    pdf_gcs_path_to_use = None
-
+    # 1. Determine which PDF to use
     if current_book_gcs_path:
-        # 1. A book was explicitly uploaded/selected in this session. Use it.
         pdf_gcs_path_to_use = current_book_gcs_path
-        print(f"✅ Using explicitly selected book: gs://{BUCKET_NAME}/{pdf_gcs_path_to_use}")
+        print(f"✅ Using selected book: gs://{BUCKET_NAME}/{pdf_gcs_path_to_use}")
     else:
-        # 2. No book explicitly selected. Find the latest uploaded PDF in GCS.
-        print("⚠️ No book selected in session. Searching GCS for the latest PDF...")
+        print("⚠️ No book selected. Searching for latest in GCS...")
         pdf_files_info = get_gcs_files_info(PDF_PREFIX, ALLOWED_PDF_EXTS)
-
         if not pdf_files_info:
-            # 2a. No PDFs found in the bucket at all. Error out.
-            print("❌ No PDF books found in the GCS bucket.")
-            # Redirect with a specific message
-            return redirect(url_for('index', status='error', message='No books have been uploaded yet. Please upload a book first.'))
-        else:
-            # 2b. Found PDFs. Use the latest one (the first item after sorting).
-            latest_book_info = pdf_files_info[0]
-            pdf_gcs_path_to_use = latest_book_info['blob_name']
-            # IMPORTANT: Update the global state so the UI shows this book as selected
-            # on the next page load.
-            current_book_gcs_path = pdf_gcs_path_to_use
-            print(f"✅ Automatically selected latest uploaded book: gs://{BUCKET_NAME}/{pdf_gcs_path_to_use} (Uploaded: {latest_book_info['updated']})")
+            print("❌ No PDFs found in bucket.")
+            return redirect(url_for('index', status='error', message='No books have been uploaded yet.'))
+        latest_book_info = pdf_files_info[0]
+        pdf_gcs_path_to_use = latest_book_info['blob_name']
+        current_book_gcs_path = pdf_gcs_path_to_use
+        print(f"✅ Defaulted to latest uploaded book: gs://{BUCKET_NAME}/{pdf_gcs_path_to_use}")
 
-    # --- Now we have 'pdf_gcs_path_to_use' set ---
-
-    # 3. Validate audio file (same as before)
+    # 2. Validate and name the audio file
     file = request.files.get('audio_data')
     if not file or not file.filename:
         return redirect(url_for('index', status='error', message='No audio file provided.'))
 
-    # --- Filename handling (same as before) ---
-    audio_filename_base = ""
-    if file.filename == 'blob' or not allowed_file(file.filename, ALLOWED_AUDIO_EXTS):
-        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        audio_filename_base = f"{timestamp}_query.wav"
-        content_type = file.content_type if file.content_type and file.content_type.startswith('audio/') else 'audio/wav'
-        print(f"⚠️ Filename ambiguous or invalid, using generated name: {audio_filename_base} with type {content_type}")
-    elif not allowed_file(file.filename, ALLOWED_AUDIO_EXTS):
-        return redirect(url_for('index', status='error', message='Invalid audio file type (WAV only).'))
-    else:
-        audio_filename_base = secure_filename(file.filename)
-        content_type = file.content_type or 'audio/wav'
-
-    # 4. Save audio to GCS (same as before)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    audio_filename_base = f"{timestamp}_query.wav"
     audio_blob_name = f"{UPLOAD_PREFIX}{audio_filename_base}"
+    content_type = file.content_type if file.content_type and file.content_type.startswith('audio/') else 'audio/wav'
+
+    print(f"🎧 Saving file as: {audio_filename_base} (type: {content_type})")
+
+    # 3. Upload to GCS
     audio_blob = bucket.blob(audio_blob_name)
     try:
-        print(f"☁️ Uploading audio query to gs://{BUCKET_NAME}/{audio_blob_name}...")
+        print(f"☁️ Uploading to GCS: gs://{BUCKET_NAME}/{audio_blob_name}")
         audio_blob.upload_from_file(file.stream, content_type=content_type)
-        print(f"✅ Saved audio query: {audio_blob_name}")
+        print(f"✅ Upload complete.")
     except Exception as e:
-        print(f"🔥 Error uploading audio query to GCS: {e}")
+        print(f"🔥 Upload failed: {e}")
         return redirect(url_for('index', status='error', message=f"Error saving audio file: {e}"))
 
-    # 5. Generate response using the determined PDF path
+    # 4. Generate response
     try:
-        print("🚀 Calling Gemini generate()...")
-        # *** Use the determined path here ***
+        print("🚀 Calling generate()...")
         answer_text, tts_gcs_path = generate(audio_blob_name, pdf_gcs_path_to_use)
-        print("✅ Gemini process finished.")
+        print("✅ Generation complete.")
 
-        # --- Save transcript (optional, same as before) ---
         if answer_text and tts_gcs_path:
-             transcript_filename = os.path.basename(tts_gcs_path).replace('.wav', '.txt')
-             transcript_blob_name = f"{TRANSCRIPT_PREFIX}{transcript_filename}"
-             try:
-                 transcript_blob = bucket.blob(transcript_blob_name)
-                 print(f"☁️ Saving transcript to gs://{BUCKET_NAME}/{transcript_blob_name}...")
-                 transcript_blob.upload_from_string(answer_text, content_type='text/plain; charset=utf-8')
-                 print(f"📝 Transcript saved to GCS: {transcript_blob_name}")
-             except Exception as e:
-                 print(f"⚠️ Error saving transcript to GCS: {e}")
+            transcript_filename = os.path.basename(tts_gcs_path).replace('.wav', '.txt')
+            transcript_blob_name = f"{TRANSCRIPT_PREFIX}{transcript_filename}"
+            try:
+                print(f"📝 Uploading transcript to: gs://{BUCKET_NAME}/{transcript_blob_name}")
+                bucket.blob(transcript_blob_name).upload_from_string(answer_text, content_type='text/plain; charset=utf-8')
+                print(f"✅ Transcript uploaded.")
+            except Exception as e:
+                print(f"⚠️ Error uploading transcript: {e}")
 
-        # --- Redirect with status based on outcome (same as before) ---
-        redirect_status = 'error'
-        redirect_message = 'Processing failed.'
+        # 5. Handle UI redirection
         if tts_gcs_path:
-            redirect_status = 'success'
-            redirect_message = 'Question processed successfully!'
+            return redirect(url_for('index', status='success', message='Question processed successfully!'))
         elif answer_text:
-             redirect_status = 'warning'
-             redirect_message = 'Question processed, but audio generation failed.'
+            return redirect(url_for('index', status='warning', message='Question processed, but TTS failed.'))
         else:
-            redirect_status = 'error'
-            redirect_message = 'Failed to generate response.'
-
-        return redirect(url_for('index', status=redirect_status, message=redirect_message))
+            return redirect(url_for('index', status='error', message='Failed to generate response.'))
 
     except Exception as e:
-        print(f"🔥 Error during Gemini/TTS processing: {e}")
-        # Ensure error context is passed if possible
-        error_message = f"Error processing request: {str(e)[:100]}" # Limit error length
-        return redirect(url_for('index', status='error', message=error_message))
-    
+        print(f"🔥 Processing error: {e}")
+        return redirect(url_for('index', status='error', message=f"Processing error: {str(e)[:100]}"))
+
 
 
 @app.route('/view/<path:blob_path>')
 def serve_gcs_file_redirect(blob_path):
-    blob = bucket.get_blob(blob_path)
-    if not blob:
+    print(f"🔍 Requested blob path: {blob_path}")
+    blob = bucket.blob(blob_path)
+    if not blob.exists():
+        print(f"❌ Blob not found: {blob_path}")
         return redirect(url_for('index', status='error', message='File not found.')), 404
     try:
-        signed_url = blob.generate_signed_url(version="v4", expiration=timedelta(minutes=15), method="GET")
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(minutes=15),
+            method="GET"
+        )
         return redirect(signed_url)
     except Exception as e:
+        print(f"🔥 Signed URL error for {blob_path}: {e}")
         return redirect(url_for('index', status='error', message='Signed URL error.')), 500
+
 
 @app.route('/script.js')
 def serve_script():

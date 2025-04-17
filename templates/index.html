@@ -3,52 +3,47 @@
 <head>
   <meta charset="UTF-8">
   <title>Book Knowledge App</title>
-  <!-- Ensure your static files are served correctly in your deployment -->
-  <!-- Using url_for is generally robust -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
-      /* Add basic styles for status messages if not in style.css */
-      .status-message {
-          padding: 10px 15px;
-          margin: 15px 0;
-          border-radius: 4px;
-          color: white;
-          font-weight: bold;
-      }
-      .status-success { background-color: #4CAF50; } /* Green */
-      .status-error { background-color: #f44336; } /* Red */
-      .status-warning { background-color: #ff9800; } /* Orange */
-      li { margin-bottom: 10px; }
-      audio { width: 90%; margin-top: 5px; }
+    .status-message {
+      padding: 10px 15px;
+      margin: 15px 0;
+      border-radius: 6px;
+      color: white;
+      font-weight: bold;
+      text-align: center;
+    }
+    .status-success { background-color: #4CAF50; }
+    .status-error { background-color: #f44336; }
+    .status-warning { background-color: #ff9800; }
+    li { margin-bottom: 12px; }
+    audio { width: 100%; max-width: 600px; margin-top: 5px; }
+    hr { border: 0; border-top: 1px solid #ddd; margin: 40px 0; }
   </style>
 </head>
 <body>
-
   <div class="container">
     <div class="logo-header">
-        <!-- Assuming 'static' folder is configured -->
-        <img src="{{ url_for('static', filename='BookApplogo.png') }}" alt="Book Logo" style="max-width: 150px;"> <!-- Added simple style -->
+      <img src="{{ url_for('static', filename='BookApplogo.png') }}" alt="Book Logo" style="max-width: 150px;">
     </div>
 
-    <!-- Status Messages Display (Using query parameters) -->
-    {% if status and message %}
-      {# Use the 'status' variable ('success', 'error', 'warning') for CSS class #}
-      <div class="status-message status-{{ status }}">
-          <p>{{ message }}</p> {# Display the detailed message #}
+    {% if status %}
+      {% set status_class = 'status-' + status %}
+      <div class="status-message {{ status_class }}">
+        <p>{{ status_message }}</p>
       </div>
     {% endif %}
-    <!-- End Status Message Display -->
 
     <section>
-        <h2>📄 Upload Book (PDF)</h2>
-        <form action="{{ url_for('upload_book') }}" method="post" enctype="multipart/form-data">
-          <input type="file" name="book_pdf" accept=".pdf" required>
-          <input type="submit" value="Upload Book">
-        </form>
-        {% if current_book %}
-          <p><strong>Current book:</strong> {{ current_book }}</p>
-        {% endif %}
-      </section>
+      <h2>📄 Upload Book (PDF)</h2>
+      <form action="{{ url_for('upload_book') }}" method="post" enctype="multipart/form-data">
+        <input type="file" name="book_pdf" accept=".pdf" required>
+        <input type="submit" value="Upload Book">
+      </form>
+      {% if current_book %}
+        <p><strong>Current book:</strong> {{ current_book }}</p>
+      {% endif %}
+    </section>
 
     <section>
       <h2>🎤 Record Your Question</h2>
@@ -59,78 +54,72 @@
       <audio id="audio" controls></audio>
     </section>
 
-    <hr> <!-- Added separator -->
+    <hr>
 
     <section>
       <h2>📚 Available Books</h2>
       {% if pdf_files %}
-      <ul>
-        {% for file in pdf_files %}
-          <li>
-            {{ file }}
-            {% if current_book == file %} <strong>(Selected)</strong> {% endif %}
-            {# Link to view the PDF using the signed URL route #}
-            {# Construct the full blob path: 'books/' + filename #}
-            <a href="{{ url_for('serve_gcs_file_redirect', blob_path='books/' + file) }}" target="_blank">View PDF</a>
-          </li>
-        {% endfor %}
-      </ul>
+        <ul>
+          {% for file in pdf_files %}
+            <li>
+              {{ file }}
+              {% if current_book == file %}<strong> (Selected)</strong>{% endif %}
+              <a href="{{ url_for('serve_gcs_file_redirect', blob_path='books/' + file) }}" target="_blank">View PDF</a>
+            </li>
+          {% endfor %}
+        </ul>
       {% else %}
         <p>No books uploaded yet.</p>
       {% endif %}
     </section>
 
-    <hr> <!-- Added separator -->
+    <hr>
 
     <section>
-      <h2>🗣️ Audio Queries History</h2>
-       {% if audio_files %}
-       <ul>
-         {% for file in audio_files %}
-           <li>
-             <strong>{{ file }}</strong><br>
-             <audio controls preload="none"> {# Added preload="none" #}
-               {# Link audio source using the signed URL route #}
-               {# Construct the full blob path: 'uploads/' + filename #}
-               <source src="{{ url_for('serve_gcs_file_redirect', blob_path='uploads/' + file) }}" type="audio/wav">
-               Audio not supported.
-             </audio>
-           </li>
-         {% endfor %}
-       </ul>
-       {% else %}
-         <p>No audio queries recorded/uploaded yet.</p>
-       {% endif %}
+      <h2>🗣️ Audio Queries</h2>
+      {% if audio_files %}
+        <ul>
+          {% for file in audio_files %}
+            <li>
+              <strong>{{ file }}</strong><br>
+              <audio controls preload="none">
+                <source src="{{ url_for('serve_gcs_file_redirect', blob_path='uploads/' + file) }}" type="audio/wav">
+                Audio not supported.
+              </audio>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No audio queries recorded/uploaded yet.</p>
+      {% endif %}
     </section>
 
-    <hr> <!-- Added separator -->
+    <hr>
 
     <section>
-      <h2>🔊 Generated Responses (TTS)</h2>
-       {% if tts_files %}
-       <ul>
-         {% for file in tts_files %}
-           <li>
-             <strong>{{ file }}</strong><br>
-             <audio controls preload="none"> {# Added preload="none" #}
-               {# Link audio source using the signed URL route #}
-               {# Construct the full blob path: 'tts/' + filename #}
-               <source src="{{ url_for('serve_gcs_file_redirect', blob_path='tts/' + file) }}" type="audio/wav">
-               Audio not supported.
-             </audio>
-             {# Optional: Link to download transcript if saved #}
-             {% set transcript_filename = file.replace('.wav', '.txt') %}
-             <a href="{{ url_for('serve_gcs_file_redirect', blob_path='transcripts/' + transcript_filename) }}" download>Download Transcript</a>
-           </li>
-         {% endfor %}
-       </ul>
-       {% else %}
-         <p>No responses generated yet.</p>
-       {% endif %}
+      <h2>🔊 TTS Responses</h2>
+      {% if tts_files %}
+        <ul>
+          {% for file in tts_files %}
+            <li>
+              <strong>{{ file }}</strong><br>
+              <audio controls preload="none">
+                <source src="{{ url_for('serve_gcs_file_redirect', blob_path='tts/' + file) }}" type="audio/wav">
+                Audio not supported.
+              </audio><br>
+              {% set transcript_filename = file.replace('.wav', '.txt') %}
+              <a href="{{ url_for('serve_gcs_file_redirect', blob_path='transcripts/' + transcript_filename) }}" target="_blank">
+                View Transcript
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No responses generated yet.</p>
+      {% endif %}
     </section>
   </div>
 
   <script src="{{ url_for('serve_script') }}"></script>
-
 </body>
 </html>
